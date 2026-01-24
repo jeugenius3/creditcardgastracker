@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Card Tracker">
+    <title>Card Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --surface: #1a1a1a;
+            --surface-hover: #252525;
+            --border: #333;
+            --text: #f5f5f5;
+            --text-muted: #888;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --pending: #f59e0b;
+            --posted: #22c55e;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .header {
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .header-date {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .cards-container {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-section {
+            background: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .card-header:active {
+            background: var(--surface-hover);
+        }
+
+        .card-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .card-total {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .card-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .card-content.expanded {
+            max-height: 2000px;
+        }
+
+        .subsection {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .subsection:last-child {
+            border-bottom: none;
+        }
+
+        .subsection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .subsection-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .subsection-title.pending {
+            color: var(--pending);
+        }
+
+        .subsection-title.posted {
+            color: var(--posted);
+        }
+
+        .add-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: white;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .add-btn:active {
+            background: var(--accent-hover);
+        }
+
+        .transactions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .transaction {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg);
+            border-radius: 8px;
+        }
+
+        .transaction-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .transaction-desc {
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .transaction-date {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .transaction-amount {
+            font-size: 15px;
+            font-weight: 500;
+            margin-left: 12px;
+        }
+
+        .transaction-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 12px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: var(--surface-hover);
+            color: var(--text-muted);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:active {
+            background: var(--border);
+        }
+
+        .action-btn.delete:active {
+            background: var(--danger);
+            color: white;
+        }
+
+        .action-btn.post {
+            color: var(--posted);
+        }
+
+        .action-btn.post:active {
+            background: var(--posted);
+            color: white;
+        }
+
+        /* Gas Fund Section */
+        .gas-fund-section {
+            margin: 16px;
+            background: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--pending);
+        }
+
+        .gas-fund-header {
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%);
+        }
+
+        .gas-fund-header:active {
+            background: var(--surface-hover);
+        }
+
+        .gas-fund-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .gas-fund-balance {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--pending);
+        }
+
+        .gas-fund-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            border-top: 1px solid var(--border);
+        }
+
+        .gas-fund-content.expanded {
+            max-height: 1000px;
+        }
+
+        .gas-fund-actions {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .gas-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .gas-btn.deposit {
+            background: var(--posted);
+            color: white;
+        }
+
+        .gas-btn.deposit:active {
+            background: #16a34a;
+        }
+
+        .gas-btn.purchase {
+            background: var(--pending);
+            color: white;
+        }
+
+        .gas-btn.purchase:active {
+            background: #d97706;
+        }
+
+        .gas-transactions {
+            padding: 0 16px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .gas-transaction {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg);
+            border-radius: 8px;
+        }
+
+        .gas-transaction-amount.deposit {
+            color: var(--posted);
+        }
+
+        .gas-transaction-amount.purchase {
+            color: var(--pending);
+        }
+
+        .empty-state {
+            padding: 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--surface);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg);
+            border: none;
+            color: var(--text);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 16px;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .submit-btn:active {
+            background: var(--accent-hover);
+        }
+
+        /* Floating action button */
+        .fab {
+            position: fixed;
+            bottom: calc(24px + env(safe-area-inset-bottom));
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: white;
+            font-size: 28px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .fab:active {
+            background: var(--accent-hover);
+            transform: scale(0.95);
+        }
+
+        /* Export section */
+        .export-section {
+            padding: 16px;
+            padding-top: 0;
+        }
+
+        .export-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .export-btn:active {
+            background: var(--surface-hover);
+        }
+
+        /* Chevron icon */
+        .chevron {
+            transition: transform 0.3s ease;
+        }
+
+        .card-header.expanded .chevron {
+            transform: rotate(180deg);
+        }
+
+        /* Swipe hint animation */
+        @keyframes swipeHint {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(-5px); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Card Tracker</h1>
+        <span class="header-date" id="currentDate"></span>
+    </header>
+
+    <div class="gas-fund-section">
+        <div class="gas-fund-header" onclick="toggleGasFund()">
+            <div class="gas-fund-title">
+                <span>⛽</span>
+                <span>Gas Fund</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="gas-fund-balance" id="gasBalance">$0.00</span>
+                <span class="chevron" id="gasChevron">▼</span>
+            </div>
+        </div>
+        <div class="gas-fund-content" id="gasFundContent">
+            <div class="gas-fund-actions">
+                <button class="gas-btn deposit" onclick="openGasModal('deposit')">+ Add Funds</button>
+                <button class="gas-btn purchase" onclick="openGasModal('purchase')">− Purchase</button>
+            </div>
+            <div class="gas-transactions" id="gasTransactions"></div>
+        </div>
+    </div>
+
+    <div class="cards-container" id="cardsContainer"></div>
+
+    <div class="export-section">
+        <button class="export-btn" onclick="exportData()">Export to Clipboard</button>
+    </div>
+
+    <button class="fab" onclick="openQuickAdd()">+</button>
+
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Add Transaction</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="transactionForm" onsubmit="saveTransaction(event)">
+                <div class="form-group">
+                    <label class="form-label">Card</label>
+                    <select class="form-input" id="formCard" required>
+                        <option value="">Select card...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Source</label>
+                    <select class="form-input" id="formSource" required>
+                        <option value="">Select source...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-input" id="formStatus" required>
+                        <option value="pending">Pending</option>
+                        <option value="posted">Posted</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Amount</label>
+                        <input type="number" step="0.01" class="form-input" id="formAmount" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-input" id="formDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <input type="text" class="form-input" id="formDesc" placeholder="What did you buy?" required>
+                </div>
+                <input type="hidden" id="editingId">
+                <button type="submit" class="submit-btn">Save Transaction</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="gasModalOverlay" onclick="closeGasModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title" id="gasModalTitle">Add Funds</h2>
+                <button class="modal-close" onclick="closeGasModal()">&times;</button>
+            </div>
+            <form id="gasForm" onsubmit="saveGasTransaction(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Amount</label>
+                        <input type="number" step="0.01" class="form-input" id="gasFormAmount" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-input" id="gasFormDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Note (optional)</label>
+                    <input type="text" class="form-input" id="gasFormNote" placeholder="e.g., Shell, Costco...">
+                </div>
+                <input type="hidden" id="gasFormType">
+                <button type="submit" class="submit-btn" id="gasSubmitBtn">Add Funds</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Data structure
+        const defaultCards = [
+            {
+                id: 'chase',
+                name: 'Chase/Chase Business',
+                sources: ['Fidelity', 'Annual']
+            },
+            {
+                id: 'fidelity',
+                name: 'Fidelity Visa',
+                sources: ['Default']
+            },
+            {
+                id: 'citi',
+                name: 'Citi Card',
+                sources: ['Default']
+            },
+            {
+                id: 'discover',
+                name: 'Discover',
+                sources: ['Default']
+            },
+            {
+                id: 'karat',
+                name: 'Karat',
+                sources: ['Default']
+            }
+        ];
+
+        let cards = JSON.parse(localStorage.getItem('cardTracker_cards')) || defaultCards;
+        let transactions = JSON.parse(localStorage.getItem('cardTracker_transactions')) || [];
+        let expandedCards = JSON.parse(localStorage.getItem('cardTracker_expanded')) || {};
+        let gasTransactions = JSON.parse(localStorage.getItem('cardTracker_gas')) || [];
+        let gasExpanded = JSON.parse(localStorage.getItem('cardTracker_gasExpanded')) || false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDate();
+            renderCards();
+            renderGasFund();
+            populateCardSelect();
+        });
+
+        function updateDate() {
+            const now = new Date();
+            const options = { month: 'short', day: 'numeric', year: 'numeric' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        function renderCards() {
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+
+            cards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card-section';
+                
+                const cardTransactions = transactions.filter(t => t.cardId === card.id);
+                const total = cardTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+                cardEl.innerHTML = `
+                    <div class="card-header ${expandedCards[card.id] ? 'expanded' : ''}" onclick="toggleCard('${card.id}')">
+                        <span class="card-name">${card.name}</span>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span class="card-total">$${total.toFixed(2)}</span>
+                            <span class="chevron">▼</span>
+                        </div>
+                    </div>
+                    <div class="card-content ${expandedCards[card.id] ? 'expanded' : ''}" id="content-${card.id}">
+                        ${renderCardSources(card, cardTransactions)}
+                    </div>
+                `;
+                
+                container.appendChild(cardEl);
+            });
+        }
+
+        function renderCardSources(card, cardTransactions) {
+            let html = '';
+            
+            card.sources.forEach(source => {
+                const sourceTransactions = cardTransactions.filter(t => t.source === source);
+                const pending = sourceTransactions.filter(t => t.status === 'pending');
+                const posted = sourceTransactions.filter(t => t.status === 'posted');
+
+                if (card.sources.length > 1 || source !== 'Default') {
+                    html += `<div style="padding: 12px 16px; border-bottom: 1px solid var(--border);">
+                        <span style="font-weight: 500;">From ${source}:</span>
+                    </div>`;
+                }
+
+                // Pending section
+                html += `
+                    <div class="subsection">
+                        <div class="subsection-header">
+                            <span class="subsection-title pending">Pending</span>
+                            <button class="add-btn" onclick="openModal('${card.id}', '${source}', 'pending')">+</button>
+                        </div>
+                        <div class="transactions">
+                            ${pending.length ? pending.map(t => renderTransaction(t)).join('') : '<div class="empty-state">No pending transactions</div>'}
+                        </div>
+                    </div>
+                `;
+
+                // Posted section
+                html += `
+                    <div class="subsection">
+                        <div class="subsection-header">
+                            <span class="subsection-title posted">Posted</span>
+                            <button class="add-btn" onclick="openModal('${card.id}', '${source}', 'posted')">+</button>
+                        </div>
+                        <div class="transactions">
+                            ${posted.length ? posted.map(t => renderTransaction(t)).join('') : '<div class="empty-state">No posted transactions</div>'}
+                        </div>
+                    </div>
+                `;
+            });
+
+            return html;
+        }
+
+        function renderTransaction(t) {
+            const date = new Date(t.date + 'T00:00:00');
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            
+            return `
+                <div class="transaction">
+                    <div class="transaction-info">
+                        <div class="transaction-desc">${t.description}</div>
+                        <div class="transaction-date">${dateStr}</div>
+                    </div>
+                    <span class="transaction-amount">$${parseFloat(t.amount).toFixed(2)}</span>
+                    <div class="transaction-actions">
+                        ${t.status === 'pending' ? `<button class="action-btn post" onclick="postTransaction('${t.id}')" title="Mark as posted">✓</button>` : ''}
+                        <button class="action-btn" onclick="editTransaction('${t.id}')" title="Edit">✎</button>
+                        <button class="action-btn delete" onclick="deleteTransaction('${t.id}')" title="Delete">✕</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleCard(cardId) {
+            expandedCards[cardId] = !expandedCards[cardId];
+            localStorage.setItem('cardTracker_expanded', JSON.stringify(expandedCards));
+            
+            const header = document.querySelector(`#content-${cardId}`).previousElementSibling;
+            const content = document.getElementById(`content-${cardId}`);
+            
+            header.classList.toggle('expanded');
+            content.classList.toggle('expanded');
+        }
+
+        function populateCardSelect() {
+            const select = document.getElementById('formCard');
+            select.innerHTML = '<option value="">Select card...</option>';
+            cards.forEach(card => {
+                select.innerHTML += `<option value="${card.id}">${card.name}</option>`;
+            });
+        }
+
+        function updateSourceSelect(cardId) {
+            const card = cards.find(c => c.id === cardId);
+            const select = document.getElementById('formSource');
+            select.innerHTML = '<option value="">Select source...</option>';
+            
+            if (card) {
+                card.sources.forEach(source => {
+                    select.innerHTML += `<option value="${source}">${source}</option>`;
+                });
+            }
+        }
+
+        document.getElementById('formCard').addEventListener('change', (e) => {
+            updateSourceSelect(e.target.value);
+        });
+
+        function openModal(cardId = '', source = '', status = 'pending') {
+            const modal = document.getElementById('modalOverlay');
+            document.getElementById('modalTitle').textContent = 'Add Transaction';
+            document.getElementById('editingId').value = '';
+            
+            // Set form values
+            document.getElementById('formCard').value = cardId;
+            updateSourceSelect(cardId);
+            document.getElementById('formSource').value = source;
+            document.getElementById('formStatus').value = status;
+            document.getElementById('formAmount').value = '';
+            document.getElementById('formDesc').value = '';
+            document.getElementById('formDate').value = new Date().toISOString().split('T')[0];
+            
+            modal.classList.add('active');
+            
+            // Focus amount field after animation
+            setTimeout(() => {
+                document.getElementById('formAmount').focus();
+            }, 300);
+        }
+
+        function openQuickAdd() {
+            openModal();
+        }
+
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+
+        function saveTransaction(event) {
+            event.preventDefault();
+            
+            const editingId = document.getElementById('editingId').value;
+            const transaction = {
+                id: editingId || Date.now().toString(),
+                cardId: document.getElementById('formCard').value,
+                source: document.getElementById('formSource').value,
+                status: document.getElementById('formStatus').value,
+                amount: document.getElementById('formAmount').value,
+                description: document.getElementById('formDesc').value,
+                date: document.getElementById('formDate').value
+            };
+
+            if (editingId) {
+                const index = transactions.findIndex(t => t.id === editingId);
+                if (index !== -1) {
+                    transactions[index] = transaction;
+                }
+            } else {
+                transactions.push(transaction);
+            }
+
+            localStorage.setItem('cardTracker_transactions', JSON.stringify(transactions));
+            
+            // Expand the card we just added to
+            expandedCards[transaction.cardId] = true;
+            localStorage.setItem('cardTracker_expanded', JSON.stringify(expandedCards));
+            
+            closeModal();
+            renderCards();
+        }
+
+        function editTransaction(id) {
+            const t = transactions.find(t => t.id === id);
+            if (!t) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Transaction';
+            document.getElementById('editingId').value = t.id;
+            document.getElementById('formCard').value = t.cardId;
+            updateSourceSelect(t.cardId);
+            document.getElementById('formSource').value = t.source;
+            document.getElementById('formStatus').value = t.status;
+            document.getElementById('formAmount').value = t.amount;
+            document.getElementById('formDesc').value = t.description;
+            document.getElementById('formDate').value = t.date;
+
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('Delete this transaction?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                localStorage.setItem('cardTracker_transactions', JSON.stringify(transactions));
+                renderCards();
+            }
+        }
+
+        function postTransaction(id) {
+            const index = transactions.findIndex(t => t.id === id);
+            if (index !== -1) {
+                transactions[index].status = 'posted';
+                localStorage.setItem('cardTracker_transactions', JSON.stringify(transactions));
+                renderCards();
+            }
+        }
+
+        // Gas Fund Functions
+        function renderGasFund() {
+            const balance = gasTransactions.reduce((sum, t) => {
+                return sum + (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
+            }, 0);
+            
+            document.getElementById('gasBalance').textContent = `$${balance.toFixed(2)}`;
+            document.getElementById('gasBalance').style.color = balance < 20 ? 'var(--danger)' : 'var(--pending)';
+            
+            const content = document.getElementById('gasFundContent');
+            const chevron = document.getElementById('gasChevron');
+            if (gasExpanded) {
+                content.classList.add('expanded');
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.remove('expanded');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+            
+            const container = document.getElementById('gasTransactions');
+            if (gasTransactions.length === 0) {
+                container.innerHTML = '<div class="empty-state">No transactions yet</div>';
+                return;
+            }
+            
+            // Sort by date, most recent first
+            const sorted = [...gasTransactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            container.innerHTML = sorted.map(t => {
+                const date = new Date(t.date + 'T00:00:00');
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const sign = t.type === 'deposit' ? '+' : '-';
+                
+                return `
+                    <div class="gas-transaction">
+                        <div class="transaction-info">
+                            <div class="transaction-desc">${t.note || (t.type === 'deposit' ? 'Added funds' : 'Gas purchase')}</div>
+                            <div class="transaction-date">${dateStr}</div>
+                        </div>
+                        <span class="gas-transaction-amount ${t.type}">${sign}$${parseFloat(t.amount).toFixed(2)}</span>
+                        <div class="transaction-actions">
+                            <button class="action-btn delete" onclick="deleteGasTransaction('${t.id}')" title="Delete">✕</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleGasFund() {
+            gasExpanded = !gasExpanded;
+            localStorage.setItem('cardTracker_gasExpanded', JSON.stringify(gasExpanded));
+            renderGasFund();
+        }
+
+        function openGasModal(type) {
+            const modal = document.getElementById('gasModalOverlay');
+            document.getElementById('gasModalTitle').textContent = type === 'deposit' ? 'Add Funds' : 'Gas Purchase';
+            document.getElementById('gasSubmitBtn').textContent = type === 'deposit' ? 'Add Funds' : 'Record Purchase';
+            document.getElementById('gasFormType').value = type;
+            document.getElementById('gasFormAmount').value = '';
+            document.getElementById('gasFormNote').value = '';
+            document.getElementById('gasFormNote').placeholder = type === 'deposit' ? 'e.g., Transfer from checking...' : 'e.g., Shell, Costco...';
+            document.getElementById('gasFormDate').value = new Date().toISOString().split('T')[0];
+            
+            modal.classList.add('active');
+            
+            setTimeout(() => {
+                document.getElementById('gasFormAmount').focus();
+            }, 300);
+        }
+
+        function closeGasModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('gasModalOverlay').classList.remove('active');
+        }
+
+        function saveGasTransaction(event) {
+            event.preventDefault();
+            
+            const transaction = {
+                id: Date.now().toString(),
+                type: document.getElementById('gasFormType').value,
+                amount: document.getElementById('gasFormAmount').value,
+                note: document.getElementById('gasFormNote').value,
+                date: document.getElementById('gasFormDate').value
+            };
+            
+            gasTransactions.push(transaction);
+            localStorage.setItem('cardTracker_gas', JSON.stringify(gasTransactions));
+            
+            gasExpanded = true;
+            localStorage.setItem('cardTracker_gasExpanded', JSON.stringify(gasExpanded));
+            
+            closeGasModal();
+            renderGasFund();
+        }
+
+        function deleteGasTransaction(id) {
+            if (confirm('Delete this transaction?')) {
+                gasTransactions = gasTransactions.filter(t => t.id !== id);
+                localStorage.setItem('cardTracker_gas', JSON.stringify(gasTransactions));
+                renderGasFund();
+            }
+        }
+
+        function exportData() {
+            let output = `${document.getElementById('currentDate').textContent} - Card Payments\n\n`;
+            
+            cards.forEach(card => {
+                const cardTransactions = transactions.filter(t => t.cardId === card.id);
+                if (cardTransactions.length === 0) return;
+                
+                output += `${card.name}:\n`;
+                
+                card.sources.forEach(source => {
+                    const sourceTransactions = cardTransactions.filter(t => t.source === source);
+                    if (sourceTransactions.length === 0) return;
+                    
+                    if (card.sources.length > 1 || source !== 'Default') {
+                        output += `From ${source}:\n`;
+                    }
+                    
+                    const pending = sourceTransactions.filter(t => t.status === 'pending');
+                    const posted = sourceTransactions.filter(t => t.status === 'posted');
+                    
+                    output += 'Pending:\n';
+                    pending.forEach(t => {
+                        output += `  ${t.description}: $${parseFloat(t.amount).toFixed(2)}\n`;
+                    });
+                    
+                    output += '\nPosted:\n';
+                    posted.forEach(t => {
+                        output += `  ${t.description}: $${parseFloat(t.amount).toFixed(2)}\n`;
+                    });
+                    
+                    output += '\n';
+                });
+            });
+
+            navigator.clipboard.writeText(output).then(() => {
+                alert('Copied to clipboard!');
+            }).catch(() => {
+                alert('Could not copy. Try selecting and copying manually.');
+            });
+        }
+    </script>
+</body>
+</html>
