@@ -1,1057 +1,735 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Card Tracker">
-    <title>Card Tracker</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        :root {
-            --bg: #0a0a0a;
-            --surface: #1a1a1a;
-            --surface-hover: #252525;
-            --border: #333;
-            --text: #f5f5f5;
-            --text-muted: #888;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --pending: #f59e0b;
-            --posted: #22c55e;
-            --danger: #ef4444;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        .header {
-            position: sticky;
-            top: 0;
-            background: var(--bg);
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            z-index: 100;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header h1 {
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .header-date {
-            font-size: 14px;
-            color: var(--text-muted);
-        }
-
-        .cards-container {
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .card-section {
-            background: var(--surface);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 14px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            cursor: pointer;
-        }
-
-        .card-header:active {
-            background: var(--surface-hover);
-        }
-
-        .card-name {
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .card-total {
-            font-size: 14px;
-            color: var(--text-muted);
-        }
-
-        .card-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-
-        .card-content.expanded {
-            max-height: 2000px;
-        }
-
-        .subsection {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .subsection:last-child {
-            border-bottom: none;
-        }
-
-        .subsection-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .subsection-title {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .subsection-title.pending {
-            color: var(--pending);
-        }
-
-        .subsection-title.posted {
-            color: var(--posted);
-        }
-
-        .add-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: var(--accent);
-            border: none;
-            color: white;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .add-btn:active {
-            background: var(--accent-hover);
-        }
-
-        .transactions {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .transaction {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 12px;
-            background: var(--bg);
-            border-radius: 8px;
-        }
-
-        .transaction-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .transaction-desc {
-            font-size: 15px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .transaction-date {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .transaction-amount {
-            font-size: 15px;
-            font-weight: 500;
-            margin-left: 12px;
-        }
-
-        .transaction-actions {
-            display: flex;
-            gap: 8px;
-            margin-left: 12px;
-        }
-
-        .action-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            border: none;
-            background: var(--surface-hover);
-            color: var(--text-muted);
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .action-btn:active {
-            background: var(--border);
-        }
-
-        .action-btn.delete:active {
-            background: var(--danger);
-            color: white;
-        }
-
-        .action-btn.post {
-            color: var(--posted);
-        }
-
-        .action-btn.post:active {
-            background: var(--posted);
-            color: white;
-        }
-
-        /* Gas Fund Section */
-        .gas-fund-section {
-            margin: 16px;
-            background: var(--surface);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--pending);
-        }
-
-        .gas-fund-header {
-            padding: 14px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%);
-        }
-
-        .gas-fund-header:active {
-            background: var(--surface-hover);
-        }
-
-        .gas-fund-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .gas-fund-balance {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--pending);
-        }
-
-        .gas-fund-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-            border-top: 1px solid var(--border);
-        }
-
-        .gas-fund-content.expanded {
-            max-height: 1000px;
-        }
-
-        .gas-fund-actions {
-            display: flex;
-            gap: 12px;
-            padding: 16px;
-        }
-
-        .gas-btn {
-            flex: 1;
-            padding: 12px 16px;
-            border-radius: 10px;
-            border: none;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .gas-btn.deposit {
-            background: var(--posted);
-            color: white;
-        }
-
-        .gas-btn.deposit:active {
-            background: #16a34a;
-        }
-
-        .gas-btn.purchase {
-            background: var(--pending);
-            color: white;
-        }
-
-        .gas-btn.purchase:active {
-            background: #d97706;
-        }
-
-        .gas-transactions {
-            padding: 0 16px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .gas-transaction {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 12px;
-            background: var(--bg);
-            border-radius: 8px;
-        }
-
-        .gas-transaction-amount.deposit {
-            color: var(--posted);
-        }
-
-        .gas-transaction-amount.purchase {
-            color: var(--pending);
-        }
-
-        .empty-state {
-            padding: 16px;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal {
-            background: var(--surface);
-            width: 100%;
-            max-width: 500px;
-            border-radius: 20px 20px 0 0;
-            padding: 20px;
-            padding-bottom: calc(20px + env(safe-area-inset-bottom));
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .modal-overlay.active .modal {
-            transform: translateY(0);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .modal-close {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--bg);
-            border: none;
-            color: var(--text);
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 14px 16px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text);
-            font-size: 16px;
-            outline: none;
-        }
-
-        .form-input:focus {
-            border-color: var(--accent);
-        }
-
-        .form-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .form-row {
-            display: flex;
-            gap: 12px;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 16px;
-            background: var(--accent);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-
-        .submit-btn:active {
-            background: var(--accent-hover);
-        }
-
-        /* Floating action button */
-        .fab {
-            position: fixed;
-            bottom: calc(24px + env(safe-area-inset-bottom));
-            right: 24px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--accent);
-            border: none;
-            color: white;
-            font-size: 28px;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-        }
-
-        .fab:active {
-            background: var(--accent-hover);
-            transform: scale(0.95);
-        }
-
-        /* Export section */
-        .export-section {
-            padding: 16px;
-            padding-top: 0;
-        }
-
-        .export-btn {
-            width: 100%;
-            padding: 14px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text);
-            font-size: 15px;
-            cursor: pointer;
-        }
-
-        .export-btn:active {
-            background: var(--surface-hover);
-        }
-
-        /* Chevron icon */
-        .chevron {
-            transition: transform 0.3s ease;
-        }
-
-        .card-header.expanded .chevron {
-            transform: rotate(180deg);
-        }
-
-        /* Swipe hint animation */
-        @keyframes swipeHint {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(-5px); }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Card Tracker">
+<meta name="theme-color" content="#09090c">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Card Tracker</title>
+<script>
+/* Look and light/dark are set before the page draws, so nothing flashes. */
+(function () {
+  var root = document.documentElement, q = new URLSearchParams(location.search), prefs = {};
+  try { prefs = JSON.parse(localStorage.getItem('cardTracker_prefs')) || {}; } catch (e) {}
+  root.dataset.look = q.get('look') || '2';
+  var theme = q.get('theme') || prefs.theme || 'auto';
+  var dark = theme === 'dark' || (theme === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  root.dataset.mode = dark ? 'dark' : 'light';
+  if (q.get('inset')) root.style.setProperty('--sat', (+q.get('inset') || 0) + 'px');
+  if (q.get('insetb')) root.style.setProperty('--sab', (+q.get('insetb') || 0) + 'px');
+})();
+</script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --kb: 0px;
+  --bg: #f2f4f7; --surface: #ffffff; --inset: #f2f4f7; --line: #e4e7ec;
+  --text: #101828; --muted: #667085;
+  --accent: #0f766e; --accent-ink: #ffffff; --accent-soft: #d7f2ee;
+  --pending: #b45309; --pending-bg: #fef0c7;
+  --posted: #15803d; --posted-bg: #dcfce7;
+  --danger: #d92d20;
+  --hero1: #0b3b39; --hero2: #0f766e;
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+  --radius: 16px;
+}
+:root[data-mode="dark"] {
+  --bg: #0a100f; --surface: #141c1b; --inset: #1e2927; --line: #26322f;
+  --text: #eef2f1; --muted: #94a3a0;
+  --accent: #2dd4bf; --accent-ink: #042f2a; --accent-soft: rgba(45,212,191,.15);
+  --pending: #fbbf24; --pending-bg: rgba(251,191,36,.15);
+  --posted: #4ade80; --posted-bg: rgba(74,222,128,.15);
+  --danger: #f97066;
+  --hero1: #061a19; --hero2: #0c4a45;
+  --shadow: none;
+}
+:root[data-look="2"] {
+  --bg: #f4f4f6; --inset: #f1f1f4; --line: #e5e5ea;
+  --text: #0f1115; --muted: #6b7280;
+  --accent: #2563eb; --accent-ink: #ffffff; --accent-soft: #dbe7ff;
+  --hero1: #09090c; --hero2: #1f1f2a;
+}
+:root[data-look="2"][data-mode="dark"] {
+  --bg: #000000; --surface: #121216; --inset: #1f1f26; --line: #2a2a33;
+  --text: #f4f4f6; --muted: #9a9aa6;
+  --accent: #6ea8ff; --accent-ink: #06122b; --accent-soft: rgba(110,168,255,.17);
+  --hero1: #000000; --hero2: #16161d;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; min-height: 100dvh;
+  padding-bottom: calc(104px + var(--sab));
+  font-variant-numeric: tabular-nums;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+input { font: inherit; color: inherit; }
+svg { display: block; }
+
+/* ---------- Top of the page ---------- */
+.hero {
+  background: linear-gradient(155deg, var(--hero1), var(--hero2));
+  color: #fff;
+  padding: calc(14px + var(--sat)) 20px 22px;
+  border-radius: 0 0 28px 28px;
+}
+.hero-top { display: flex; align-items: center; gap: 12px; }
+.app-name { font-size: 15px; font-weight: 600; letter-spacing: .2px; }
+.hero-date { font-size: 13px; color: rgba(255,255,255,.7); margin-left: auto; }
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.14); color: #fff; }
+.icon-btn:active { background: rgba(255,255,255,.26); }
+.hero-label { margin-top: 18px; font-size: 13px; color: rgba(255,255,255,.72); }
+.hero-total { font-size: 44px; font-weight: 700; letter-spacing: -1px; line-height: 1.1; margin-top: 2px; }
+.hero-split { display: flex; gap: 10px; margin-top: 14px; }
+.stat { flex: 1; background: rgba(255,255,255,.11); border-radius: 14px; padding: 10px 12px; }
+.stat-label { font-size: 12px; color: rgba(255,255,255,.75); display: flex; align-items: center; gap: 6px; }
+.stat-val { font-size: 18px; font-weight: 600; margin-top: 2px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.pending { background: #fbbf24; }
+.dot.posted { background: #4ade80; }
+.hero-src { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px; font-size: 13px; color: rgba(255,255,255,.72); }
+.hero-src:empty { display: none; }
+.hero-src b { color: #fff; font-weight: 600; }
+
+[data-look="2"] .hero { border-radius: 0; padding-bottom: 26px; }
+[data-look="2"] .hero-label, [data-look="2"] .hero-total { text-align: center; }
+[data-look="2"] .hero-label { margin-top: 22px; }
+[data-look="2"] .hero-total { font-size: 48px; }
+[data-look="2"] .hero-split { margin-top: 18px; }
+[data-look="2"] .stat { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.08); }
+[data-look="2"] .hero-src { justify-content: center; }
+
+/* ---------- Cards ---------- */
+.list { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--surface); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.card-head { width: 100%; display: grid; grid-template-columns: auto 1fr auto auto; grid-template-areas: "mono name total chev" "mono sub sub sub"; align-items: center; gap: 2px 12px; padding: 14px; text-align: left; }
+.card-head:active { background: var(--inset); }
+.mono { grid-area: mono; width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, var(--c1), var(--c2)); color: var(--ct, #fff); display: grid; place-items: center; font-weight: 700; font-size: 16px; }
+.card-id { display: contents; }
+.card-name { grid-area: name; min-width: 0; font-weight: 600; font-size: 16px; line-height: 1.25; }
+.card-sub { grid-area: sub; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0 12px; }
+.card-sub span { white-space: nowrap; }
+.card-total { grid-area: total; font-weight: 700; font-size: 17px; }
+.chev { grid-area: chev; color: var(--muted); transition: transform .2s; }
+.card.open .chev { transform: rotate(180deg); }
+.card-body { display: none; border-top: 1px solid var(--line); }
+.card.open .card-body { display: block; }
+
+[data-look="2"] .list { gap: 14px; }
+[data-look="2"] .card { background: transparent; box-shadow: none; overflow: visible; }
+[data-look="2"] .card-head {
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, var(--c1), var(--c2)); color: var(--ct, #fff);
+  border-radius: 20px; min-height: 108px; padding: 16px 18px;
+  grid-template-columns: 1fr auto; grid-template-rows: auto 1fr; grid-template-areas: "name chev" "sub total"; align-items: start; gap: 6px 12px;
+  box-shadow: 0 10px 22px -12px var(--c2);
+}
+[data-look="2"] .card-head::after { content: ""; position: absolute; right: -40px; top: -50px; width: 170px; height: 170px; border-radius: 50%; background: rgba(255,255,255,.09); pointer-events: none; }
+[data-look="2"] .card-head:active { filter: brightness(.93); }
+[data-look="2"] .mono { display: none; }
+[data-look="2"] .card-name { font-size: 17px; }
+[data-look="2"] .card-sub { color: inherit; opacity: .85; align-self: end; }
+[data-look="2"] .chev { justify-self: end; color: inherit; opacity: .8; position: relative; z-index: 1; }
+[data-look="2"] .card-total { align-self: end; font-size: 24px; position: relative; z-index: 1; }
+[data-look="2"] .card-body { background: var(--surface); border-radius: 16px; margin-top: 8px; border-top: 0; box-shadow: var(--shadow); overflow: hidden; }
+
+.src + .src { border-top: 8px solid var(--bg); }
+.src-head { display: flex; justify-content: space-between; padding: 14px 16px 2px; font-size: 13px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
+.grp { padding: 8px 8px 2px; }
+.grp-head { display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px; min-height: 36px; }
+.tag { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+.tag.pending { background: var(--pending-bg); color: var(--pending); }
+.tag.posted { background: var(--posted-bg); color: var(--posted); }
+.grp-total { font-size: 13px; color: var(--muted); font-weight: 600; }
+.paid-btn { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--accent); padding: 7px 12px; border-radius: 999px; background: var(--accent-soft); }
+.paid-btn:active { opacity: .7; }
+.row { display: flex; align-items: center; border-radius: 12px; }
+.tick { width: 44px; height: 52px; display: grid; place-items: center; flex: none; }
+.tick i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--pending); display: grid; place-items: center; }
+.tick.done i { background: var(--posted); border-color: var(--posted); color: var(--surface); }
+button.tick:active i { background: var(--pending-bg); }
+.row-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: left; padding: 6px 8px 6px 0; min-height: 52px; border-radius: 12px; }
+.row-main:active { background: var(--inset); }
+.row-text { flex: 1; min-width: 0; }
+.desc { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.date { display: block; font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+.amt { font-size: 16px; font-weight: 600; }
+.amt.neg { color: var(--posted); }
+.empty { padding: 14px 16px 2px; color: var(--muted); font-size: 14px; }
+.add-row { display: block; width: calc(100% - 32px); margin: 8px 16px 14px; padding: 11px; border-radius: 12px; border: 1.5px dashed var(--line); color: var(--accent); font-weight: 600; font-size: 15px; }
+.add-row:active { background: var(--accent-soft); }
+.foot { text-align: center; font-size: 13px; color: var(--muted); padding: 6px 0 0; }
+.foot button { color: var(--accent); font-weight: 600; padding: 6px 4px; }
+
+.fab { position: fixed; right: 18px; bottom: calc(18px + var(--sab)); height: 56px; padding: 0 22px 0 16px; border-radius: 28px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; box-shadow: 0 10px 24px -8px rgba(0,0,0,.5); z-index: 40; }
+.fab:active { transform: scale(.96); }
+
+/* ---------- Pop-up panels ---------- */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.5); opacity: 0; visibility: hidden; transition: opacity .2s, visibility 0s .2s; z-index: 100; display: flex; align-items: flex-end; justify-content: center; padding-bottom: var(--kb); }
+.scrim.on { opacity: 1; visibility: visible; transition: opacity .2s; }
+.sheet { background: var(--surface); width: 100%; max-width: 520px; max-height: calc(92vh - var(--kb)); max-height: calc(92dvh - var(--kb)); overflow: auto; -webkit-overflow-scrolling: touch; border-radius: 24px 24px 0 0; padding: 10px 18px calc(18px + var(--sab)); transform: translateY(100%); transition: transform .25s ease; }
+.scrim.on .sheet { transform: none; }
+.grab { width: 36px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 10px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.sheet-title { font-size: 19px; font-weight: 700; }
+.x { width: 36px; height: 36px; border-radius: 50%; background: var(--inset); display: grid; place-items: center; color: var(--muted); }
+
+.amount-wrap { display: flex; align-items: baseline; justify-content: center; gap: 4px; padding: 2px 0 6px; }
+.amount-wrap span { font-size: 28px; font-weight: 600; color: var(--muted); }
+.amount { font-size: 46px; font-weight: 700; letter-spacing: -1px; border: 0; background: none; outline: none; width: 4.6em; min-width: 0; }
+.amount::placeholder { color: var(--line); }
+.refund { display: flex; justify-content: center; margin-bottom: 14px; }
+.field { margin-bottom: 14px; }
+.label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.input { width: 100%; min-height: 48px; padding: 12px 14px; background: var(--inset); border: 1.5px solid transparent; border-radius: 12px; font-size: 16px; outline: none; -webkit-appearance: none; appearance: none; }
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--muted); opacity: .75; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 9px 14px; border-radius: 999px; background: var(--inset); font-size: 15px; font-weight: 500; border: 1.5px solid transparent; }
+.chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.chip.small { font-size: 13px; padding: 6px 11px; }
+.sugg { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; scrollbar-width: none; }
+.sugg::-webkit-scrollbar { display: none; }
+.sugg:empty { display: none; }
+.sugg .chip { white-space: nowrap; flex: none; }
+.seg { display: flex; background: var(--inset); border-radius: 12px; padding: 3px; }
+.seg button { flex: 1; padding: 10px; border-radius: 9px; font-weight: 600; font-size: 15px; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+[data-mode="dark"] .seg button.on { background: #3a4644; }
+[data-look="2"][data-mode="dark"] .seg button.on { background: #3a3a46; }
+.primary { width: 100%; padding: 15px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 17px; margin-top: 6px; }
+.primary:active { opacity: .85; }
+.danger-link { width: 100%; padding: 14px; color: var(--danger); font-weight: 600; margin-top: 4px; }
+
+.menu-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 13px 2px; text-align: left; border-bottom: 1px solid var(--line); }
+.menu-item:active { background: var(--inset); }
+.menu-ic { width: 38px; height: 38px; border-radius: 11px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex: none; }
+.menu-t { display: block; font-weight: 600; font-size: 16px; }
+.menu-s { display: block; font-size: 13px; color: var(--muted); margin-top: 1px; }
+.menu-foot { padding: 16px 0 4px; }
+
+.batch { border-bottom: 1px solid var(--line); }
+.batch summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 14px 2px; cursor: pointer; }
+.batch summary::-webkit-details-marker { display: none; }
+.batch-t { flex: 1; min-width: 0; }
+.batch-n { display: block; font-weight: 600; font-size: 15.5px; }
+.batch-d { display: block; font-size: 13px; color: var(--muted); margin-top: 1px; }
+.batch-amt { font-weight: 700; }
+.batch-item { display: flex; justify-content: space-between; gap: 12px; padding: 6px 2px; font-size: 15px; }
+.batch-item span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.batch-item small { color: var(--muted); }
+.link-btn { color: var(--accent); font-weight: 600; padding: 12px 2px 14px; font-size: 15px; }
+.note { color: var(--muted); font-size: 15px; line-height: 1.45; padding: 6px 2px 16px; }
+
+.ce { padding: 10px 0 12px; border-bottom: 1px solid var(--line); }
+.ce-top { display: flex; gap: 6px; margin-bottom: 8px; }
+.ce-top .input { flex: 1; min-width: 0; font-weight: 600; }
+.mini { width: 44px; height: 48px; border-radius: 12px; background: var(--inset); font-size: 17px; color: var(--muted); flex: none; }
+.mini:disabled { opacity: .35; }
+.mini.del { color: var(--danger); }
+.ce-help { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+
+.toast { position: fixed; left: 16px; right: 16px; bottom: calc(86px + var(--sab)); max-width: 480px; margin: 0 auto; background: #1d2939; color: #fff; border-radius: 14px; padding: 6px 6px 6px 16px; min-height: 52px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.4); transform: translateY(20px); opacity: 0; pointer-events: none; transition: transform .2s, opacity .2s; z-index: 200; font-size: 15px; }
+.toast.on { transform: none; opacity: 1; pointer-events: auto; }
+.toast button { margin-left: auto; color: #5eead4; font-weight: 700; padding: 10px 14px; }
+[data-look="2"] .toast button { color: #93c5fd; }
+</style>
 </head>
 <body>
-    <header class="header">
-        <h1>Card Tracker</h1>
-        <span class="header-date" id="currentDate"></span>
-    </header>
 
-    <div class="gas-fund-section">
-        <div class="gas-fund-header" onclick="toggleGasFund()">
-            <div class="gas-fund-title">
-                <span>⛽</span>
-                <span>Gas Fund</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span class="gas-fund-balance" id="gasBalance">$0.00</span>
-                <span class="chevron" id="gasChevron">▼</span>
-            </div>
-        </div>
-        <div class="gas-fund-content" id="gasFundContent">
-            <div class="gas-fund-actions">
-                <button class="gas-btn deposit" onclick="openGasModal('deposit')">+ Add Funds</button>
-                <button class="gas-btn purchase" onclick="openGasModal('purchase')">− Purchase</button>
-            </div>
-            <div class="gas-transactions" id="gasTransactions"></div>
-        </div>
+<header class="hero">
+  <div class="hero-top">
+    <span class="app-name">Card Tracker</span>
+    <span class="hero-date" id="date"></span>
+    <button class="icon-btn" data-action="menu" aria-label="More">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    </button>
+  </div>
+  <div class="hero-label">On all your cards</div>
+  <div class="hero-total" id="total">$0.00</div>
+  <div class="hero-split">
+    <div class="stat"><div class="stat-label"><span class="dot pending"></span>Pending</div><div class="stat-val" id="sumPending">$0.00</div></div>
+    <div class="stat"><div class="stat-label"><span class="dot posted"></span>Posted</div><div class="stat-val" id="sumPosted">$0.00</div></div>
+  </div>
+  <div class="hero-src" id="src"></div>
+</header>
+
+<main class="list" id="list"></main>
+
+<button class="fab" data-action="add" aria-label="Add a purchase">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add
+</button>
+
+<div class="scrim" id="scrim" data-action="scrim">
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 class="sheet-title" id="sheetTitle"></h2>
+      <button class="x" data-action="close" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
+    <div id="sheetBody"></div>
+  </div>
+</div>
 
-    <div class="cards-container" id="cardsContainer"></div>
+<div class="toast" id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo" data-action="undo">Undo</button></div>
+<input type="file" id="restoreFile" accept=".txt,.json,text/plain,application/json" hidden>
 
-    <div class="export-section">
-        <button class="export-btn" onclick="exportData()">Export to Clipboard</button>
-    </div>
+<script>
+(function () {
+'use strict';
 
-    <button class="fab" onclick="openQuickAdd()">+</button>
+/* Saved names. The first three are the same ones the old version used, so
+   nothing already typed into the app on the phone is lost. The old gas fund
+   entries (cardTracker_gas) are left exactly where they are and never touched. */
+var K = { cards: 'cardTracker_cards', tx: 'cardTracker_transactions', open: 'cardTracker_expanded', hist: 'cardTracker_history', prefs: 'cardTracker_prefs' };
 
-    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h2 class="modal-title" id="modalTitle">Add Transaction</h2>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
-            </div>
-            <form id="transactionForm" onsubmit="saveTransaction(event)">
-                <div class="form-group">
-                    <label class="form-label">Card</label>
-                    <select class="form-input" id="formCard" required>
-                        <option value="">Select card...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Source</label>
-                    <select class="form-input" id="formSource" required>
-                        <option value="">Select source...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Status</label>
-                    <select class="form-input" id="formStatus" required>
-                        <option value="pending">Pending</option>
-                        <option value="posted">Posted</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Amount</label>
-                        <input type="number" step="0.01" class="form-input" id="formAmount" placeholder="0.00" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Date</label>
-                        <input type="date" class="form-input" id="formDate" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Description</label>
-                    <input type="text" class="form-input" id="formDesc" placeholder="What did you buy?" required>
-                </div>
-                <input type="hidden" id="editingId">
-                <button type="submit" class="submit-btn">Save Transaction</button>
-            </form>
-        </div>
-    </div>
+var DEFAULT_CARDS = [
+  { id: 'chase', name: 'Chase/Chase Business', sources: ['Fidelity', 'Annual'] },
+  { id: 'fidelity', name: 'Fidelity Visa', sources: ['Fidelity', 'Annual'] },
+  { id: 'citi', name: 'Citi Card', sources: ['Default'] },
+  { id: 'discover', name: 'Discover', sources: ['Default'] },
+  { id: 'karat', name: 'Karat', sources: ['Default'] }
+];
+var COLORS = {
+  chase: ['#1668c7', '#0a3a7a', '#fff'],
+  fidelity: ['#3d9440', '#1c5a22', '#fff'],
+  citi: ['#17a0c4', '#0b4f79', '#fff'],
+  discover: ['#f5932a', '#d4521a', '#fff'],
+  karat: ['#34343a', '#0c0c0e', '#e9cc7c']
+};
+var EXTRA = [['#7c3aed', '#4c1d95'], ['#0d9488', '#115e59'], ['#e11d48', '#9f1239'], ['#475569', '#1e293b'], ['#c026d3', '#701a75']];
 
-    <div class="modal-overlay" id="gasModalOverlay" onclick="closeGasModal(event)">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h2 class="modal-title" id="gasModalTitle">Add Funds</h2>
-                <button class="modal-close" onclick="closeGasModal()">&times;</button>
-            </div>
-            <form id="gasForm" onsubmit="saveGasTransaction(event)">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Amount</label>
-                        <input type="number" step="0.01" class="form-input" id="gasFormAmount" placeholder="0.00" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Date</label>
-                        <input type="date" class="form-input" id="gasFormDate" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Note (optional)</label>
-                    <input type="text" class="form-input" id="gasFormNote" placeholder="e.g., Shell, Costco...">
-                </div>
-                <input type="hidden" id="gasFormType">
-                <button type="submit" class="submit-btn" id="gasSubmitBtn">Add Funds</button>
-            </form>
-        </div>
-    </div>
+var cards, tx, open, hist, prefs;
+var form = null, draft = null, undoSnap = null, toastTimer = null;
 
-    <script>
-        // Data structure
-        const defaultCards = [
-            {
-                id: 'chase',
-                name: 'Chase/Chase Business',
-                sources: ['Fidelity', 'Annual']
-            },
-            {
-                id: 'fidelity',
-                name: 'Fidelity Visa',
-                sources: ['Fidelity', 'Annual']
-            },
-            {
-                id: 'citi',
-                name: 'Citi Card',
-                sources: ['Default']
-            },
-            {
-                id: 'discover',
-                name: 'Discover',
-                sources: ['Default']
-            },
-            {
-                id: 'karat',
-                name: 'Karat',
-                sources: ['Default']
-            }
-        ];
+function $(s) { return document.querySelector(s); }
+function read(k, fb) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch (e) { return fb; } }
+function write(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+function copy(v) { return JSON.parse(JSON.stringify(v)); }
 
-        let cards = JSON.parse(localStorage.getItem('cardTracker_cards')) || defaultCards;
-        let transactions = JSON.parse(localStorage.getItem('cardTracker_transactions')) || [];
-        let expandedCards = JSON.parse(localStorage.getItem('cardTracker_expanded')) || {};
-        let gasTransactions = JSON.parse(localStorage.getItem('cardTracker_gas')) || [];
-        let gasExpanded = JSON.parse(localStorage.getItem('cardTracker_gasExpanded')) || false;
+function load() {
+  cards = read(K.cards, null);
+  if (!Array.isArray(cards) || !cards.length) cards = copy(DEFAULT_CARDS);
+  tx = read(K.tx, []); if (!Array.isArray(tx)) tx = [];
+  open = read(K.open, {}) || {};
+  hist = read(K.hist, []); if (!Array.isArray(hist)) hist = [];
+  prefs = read(K.prefs, {}) || {};
+}
+function saveTx() { write(K.tx, tx); }
+function saveHist() { write(K.hist, hist); }
+function savePrefs() { write(K.prefs, prefs); }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            updateDate();
-            renderCards();
-            renderGasFund();
-            populateCardSelect();
-        });
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function num(t) { var n = parseFloat(t.amount); return isFinite(n) ? n : 0; }
+function sum(list) { return list.reduce(function (s, t) { return s + num(t); }, 0); }
+function money(n) {
+  n = Math.round(n * 100) / 100; if (Object.is(n, -0)) n = 0;
+  return (n < 0 ? '−' : '') + '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+/* Today's date by the phone's own clock (the old version used London time,
+   so evening purchases came up dated tomorrow). */
+function today() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function fmtDate(iso) {
+  var d = new Date(iso + 'T00:00:00'); if (isNaN(d)) return '';
+  var o = { month: 'short', day: 'numeric' }; if (d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric';
+  return d.toLocaleDateString('en-US', o);
+}
+function isPending(t) { return t.status === 'pending'; }
+function newest(a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.id < b.id ? 1 : -1); }
+function cardById(id) { for (var i = 0; i < cards.length; i++) if (cards[i].id === id) return cards[i]; return null; }
+function srcOf(t, card) { return card.sources.indexOf(t.source) >= 0 ? t.source : card.sources[0]; }
+function hasNamedSources(card) { return card.sources.length > 1 || card.sources[0] !== 'Default'; }
+function colors(card, i) { return COLORS[card.id] || EXTRA[i % EXTRA.length]; }
 
-        function updateDate() {
-            const now = new Date();
-            const options = { month: 'short', day: 'numeric', year: 'numeric' };
-            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
-        }
+var CHEV = '<svg class="chev" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+var CHECK = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function icon(d) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'; }
 
-        function renderCards() {
-            const container = document.getElementById('cardsContainer');
-            container.innerHTML = '';
+/* ---------- Drawing the main page ---------- */
+function render() {
+  var live = tx.filter(function (t) { return cardById(t.cardId); });
+  var all = sum(live), pend = sum(live.filter(isPending));
+  $('#date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  $('#total').textContent = money(all);
+  $('#sumPending').textContent = money(pend);
+  $('#sumPosted').textContent = money(all - pend);
 
-            cards.forEach(card => {
-                const cardEl = document.createElement('div');
-                cardEl.className = 'card-section';
-                
-                const cardTransactions = transactions.filter(t => t.cardId === card.id);
-                const total = cardTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+  var order = [], by = {};
+  cards.forEach(function (c) { c.sources.forEach(function (s) { var k = s === 'Default' ? 'Other cards' : 'From ' + s; if (order.indexOf(k) < 0) order.push(k); }); });
+  live.forEach(function (t) { var s = srcOf(t, cardById(t.cardId)); var k = s === 'Default' ? 'Other cards' : 'From ' + s; by[k] = (by[k] || 0) + num(t); });
+  var shown = order.filter(function (k) { return by[k] != null; });
+  $('#src').innerHTML = (shown.length > 1 || (shown.length === 1 && shown[0] !== 'Other cards'))
+    ? shown.map(function (k) { return '<span>' + esc(k) + ' <b>' + money(by[k]) + '</b></span>'; }).join('') : '';
 
-                cardEl.innerHTML = `
-                    <div class="card-header ${expandedCards[card.id] ? 'expanded' : ''}" onclick="toggleCard('${card.id}')">
-                        <span class="card-name">${card.name}</span>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <span class="card-total">$${total.toFixed(2)}</span>
-                            <span class="chevron">▼</span>
-                        </div>
-                    </div>
-                    <div class="card-content ${expandedCards[card.id] ? 'expanded' : ''}" id="content-${card.id}">
-                        ${renderCardSources(card, cardTransactions)}
-                    </div>
-                `;
-                
-                container.appendChild(cardEl);
-            });
-        }
+  var foot = '<p class="foot">' + (prefs.lastBackup ? 'Last backup saved ' + esc(fmtDate(prefs.lastBackup)) : 'No backup saved yet') + ' · <button data-action="backup">Save one now</button></p>';
+  $('#list').innerHTML = cards.map(cardHTML).join('') + foot;
+}
 
-        function renderCardSources(card, cardTransactions) {
-            let html = '';
-            
-            card.sources.forEach(source => {
-                const sourceTransactions = cardTransactions.filter(t => t.source === source);
-                const pending = sourceTransactions.filter(t => t.status === 'pending');
-                const posted = sourceTransactions.filter(t => t.status === 'posted');
+function cardHTML(card, i) {
+  var mine = tx.filter(function (t) { return t.cardId === card.id; });
+  var pend = mine.filter(isPending), post = mine.filter(function (t) { return !isPending(t); });
+  var c = colors(card, i);
+  var sub = !mine.length ? '<span>Nothing on it</span>'
+    : (pend.length ? '<span>Pending ' + money(sum(pend)) + '</span>' : '') + (post.length ? '<span>Posted ' + money(sum(post)) + '</span>' : '');
+  var named = hasNamedSources(card);
+  var body = card.sources.map(function (src) {
+    var items = mine.filter(function (t) { return srcOf(t, card) === src; });
+    var p = items.filter(isPending).sort(newest), q = items.filter(function (t) { return !isPending(t); }).sort(newest);
+    var h = '<div class="src">';
+    if (named) h += '<div class="src-head"><span>From ' + esc(src) + '</span><span>' + money(sum(items)) + '</span></div>';
+    if (p.length) h += '<div class="grp"><div class="grp-head"><span class="tag pending">Pending</span><span class="grp-total">' + money(sum(p)) + '</span></div>' + p.map(rowHTML).join('') + '</div>';
+    if (q.length) h += '<div class="grp"><div class="grp-head"><span class="tag posted">Posted</span><span class="grp-total">' + money(sum(q)) + '</span>'
+      + '<button class="paid-btn" data-action="paid" data-card="' + esc(card.id) + '" data-source="' + esc(src) + '">I paid this</button></div>' + q.map(rowHTML).join('') + '</div>';
+    if (!items.length) h += '<div class="empty">Nothing here right now.</div>';
+    h += '<button class="add-row" data-action="add" data-card="' + esc(card.id) + '" data-source="' + esc(src) + '">+ Add a purchase</button></div>';
+    return h;
+  }).join('');
+  return '<section class="card' + (open[card.id] ? ' open' : '') + '" style="--c1:' + c[0] + ';--c2:' + c[1] + ';--ct:' + (c[2] || '#fff') + '">'
+    + '<button class="card-head" data-action="toggle" data-card="' + esc(card.id) + '" aria-expanded="' + (open[card.id] ? 'true' : 'false') + '">'
+    + '<span class="mono">' + esc((card.name || '?').charAt(0).toUpperCase()) + '</span>'
+    + '<span class="card-id"><span class="card-name">' + esc(card.name) + '</span><span class="card-sub">' + sub + '</span></span>'
+    + '<span class="card-total">' + money(sum(mine)) + '</span>' + CHEV + '</button>'
+    + '<div class="card-body">' + body + '</div></section>';
+}
 
-                if (card.sources.length > 1 || source !== 'Default') {
-                    html += `<div style="padding: 12px 16px; border-bottom: 1px solid var(--border);">
-                        <span style="font-weight: 500;">From ${source}:</span>
-                    </div>`;
-                }
+function rowHTML(t) {
+  var n = num(t);
+  return '<div class="row">'
+    + (isPending(t)
+      ? '<button class="tick" data-action="post" data-id="' + esc(t.id) + '" aria-label="Mark as posted"><i></i></button>'
+      : '<span class="tick done"><i>' + CHECK + '</i></span>')
+    + '<button class="row-main" data-action="edit" data-id="' + esc(t.id) + '"><span class="row-text"><span class="desc">' + esc(t.description) + '</span><span class="date">' + esc(fmtDate(t.date)) + '</span></span>'
+    + '<span class="amt' + (n < 0 ? ' neg' : '') + '">' + money(n) + '</span></button></div>';
+}
 
-                // Pending section
-                html += `
-                    <div class="subsection">
-                        <div class="subsection-header">
-                            <span class="subsection-title pending">Pending</span>
-                            <button class="add-btn" onclick="openModal('${card.id}', '${source}', 'pending')">+</button>
-                        </div>
-                        <div class="transactions">
-                            ${pending.length ? pending.map(t => renderTransaction(t)).join('') : '<div class="empty-state">No pending transactions</div>'}
-                        </div>
-                    </div>
-                `;
+/* ---------- Pop-up panel ---------- */
+function openSheet(title, html) {
+  $('#sheetTitle').textContent = title;
+  $('#sheetBody').innerHTML = html;
+  if (!$('#scrim').classList.contains('on')) { $('#sheet').scrollTop = 0; $('#scrim').classList.add('on'); document.body.style.overflow = 'hidden'; }
+}
+function closeSheet() { $('#scrim').classList.remove('on'); document.body.style.overflow = ''; form = null; draft = null; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); }
 
-                // Posted section
-                html += `
-                    <div class="subsection">
-                        <div class="subsection-header">
-                            <span class="subsection-title posted">Posted</span>
-                            <button class="add-btn" onclick="openModal('${card.id}', '${source}', 'posted')">+</button>
-                        </div>
-                        <div class="transactions">
-                            ${posted.length ? posted.map(t => renderTransaction(t)).join('') : '<div class="empty-state">No posted transactions</div>'}
-                        </div>
-                    </div>
-                `;
-            });
+/* ---------- Undo ---------- */
+function snapshot() { undoSnap = { tx: JSON.stringify(tx), hist: JSON.stringify(hist) }; }
+function toast(msg, canUndo) {
+  $('#toastMsg').textContent = msg;
+  $('#toastUndo').style.display = canUndo ? '' : 'none';
+  if (!canUndo) undoSnap = null;
+  $('#toast').classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { $('#toast').classList.remove('on'); }, canUndo ? 7000 : 2600);
+}
+function undo() {
+  if (!undoSnap) return;
+  tx = JSON.parse(undoSnap.tx); hist = JSON.parse(undoSnap.hist); undoSnap = null;
+  saveTx(); saveHist(); render(); toast('Put back.', false);
+}
 
-            return html;
-        }
+/* ---------- Adding and changing a purchase ---------- */
+function openPurchase(o) {
+  o = o || {};
+  var t = o.id ? tx.filter(function (x) { return x.id === o.id; })[0] : null;
+  if (o.id && !t) return;
+  var cardId = t ? t.cardId : (o.cardId || prefs.lastCard);
+  var card = cardById(cardId) || cards[0];
+  var source = t ? srcOf(t, card) : (o.source || prefs.lastSource);
+  if (card.sources.indexOf(source) < 0) source = card.sources[0];
+  var amt = t ? num(t) : 0;
+  form = { id: t ? t.id : '', cardId: card.id, source: source, status: t ? t.status : (o.status || 'pending'), refund: amt < 0 };
 
-        function renderTransaction(t) {
-            const date = new Date(t.date + 'T00:00:00');
-            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            
-            return `
-                <div class="transaction">
-                    <div class="transaction-info">
-                        <div class="transaction-desc">${t.description}</div>
-                        <div class="transaction-date">${dateStr}</div>
-                    </div>
-                    <span class="transaction-amount">$${parseFloat(t.amount).toFixed(2)}</span>
-                    <div class="transaction-actions">
-                        ${t.status === 'pending' ? `<button class="action-btn post" onclick="postTransaction('${t.id}')" title="Mark as posted">✓</button>` : ''}
-                        <button class="action-btn" onclick="editTransaction('${t.id}')" title="Edit">✎</button>
-                        <button class="action-btn delete" onclick="deleteTransaction('${t.id}')" title="Delete">✕</button>
-                    </div>
-                </div>
-            `;
-        }
+  var h = '<form id="pf" autocomplete="off" novalidate>'
+    + '<label class="amount-wrap"><span>$</span><input id="fAmt" class="amount" type="text" inputmode="decimal" placeholder="0.00" value="' + (t ? Math.abs(amt).toFixed(2) : '') + '" aria-label="Amount"></label>'
+    + '<div class="refund"><button type="button" class="chip small' + (form.refund ? ' on' : '') + '" id="fRefund" data-action="refund">This is a refund or credit</button></div>'
+    + '<div class="field"><label class="label" for="fDesc">What was it?</label><input id="fDesc" class="input" type="text" placeholder="Where you bought it" value="' + esc(t ? t.description : '') + '"><div class="sugg" id="fSugg"></div></div>'
+    + '<div class="field"><span class="label">Card</span><div class="chips" id="fCards"></div></div>'
+    + '<div class="field" id="fSrcField"><span class="label">Paid from</span><div class="chips" id="fSrc"></div></div>'
+    + '<div class="field"><span class="label">Has it posted yet?</span><div class="seg" id="fStatus"><button type="button" data-action="pick-status" data-v="pending">Pending</button><button type="button" data-action="pick-status" data-v="posted">Posted</button></div></div>'
+    + '<div class="field"><label class="label" for="fDate">Date</label><input id="fDate" class="input" type="date" value="' + esc(t ? t.date : today()) + '"></div>'
+    + '<button class="primary" type="submit">' + (t ? 'Save changes' : 'Save purchase') + '</button>'
+    + (t ? '<button type="button" class="danger-link" data-action="delete-tx">Delete this purchase</button>' : '')
+    + '</form>';
+  openSheet(t ? 'Change a purchase' : 'Add a purchase', h);
+  paintForm(); paintSugg();
+  if (!t) { try { $('#fAmt').focus({ preventScroll: true }); } catch (e) {} }
+}
+function paintForm() {
+  if (!form) return;
+  var card = cardById(form.cardId);
+  $('#fCards').innerHTML = cards.map(function (c) { return '<button type="button" class="chip' + (c.id === form.cardId ? ' on' : '') + '" data-action="pick-card" data-v="' + esc(c.id) + '">' + esc(c.name) + '</button>'; }).join('');
+  var named = hasNamedSources(card);
+  $('#fSrcField').style.display = named ? '' : 'none';
+  $('#fSrc').innerHTML = card.sources.map(function (s) { return '<button type="button" class="chip' + (s === form.source ? ' on' : '') + '" data-action="pick-source" data-v="' + esc(s) + '">' + esc(s) + '</button>'; }).join('');
+  Array.prototype.forEach.call(document.querySelectorAll('#fStatus button'), function (b) { b.classList.toggle('on', b.dataset.v === form.status); });
+  $('#fRefund').classList.toggle('on', form.refund);
+}
+function paintSugg() {
+  var box = $('#fSugg'); if (!box) return;
+  var typed = $('#fDesc').value.trim().toLowerCase(), seen = {}, out = [];
+  var pool = tx.slice().sort(newest);
+  hist.forEach(function (b) { pool = pool.concat(b.items || []); });
+  pool.forEach(function (t) {
+    var d = (t.description || '').trim(), k = d.toLowerCase();
+    if (!d || seen[k] || k === typed) return;
+    if (typed && k.indexOf(typed) < 0) return;
+    seen[k] = 1; out.push(d);
+  });
+  box.innerHTML = out.slice(0, 8).map(function (d) { return '<button type="button" class="chip small" data-action="sugg" data-v="' + esc(d) + '">' + esc(d) + '</button>'; }).join('');
+}
+function savePurchase() {
+  if (!form) return;
+  var raw = $('#fAmt').value.replace(/[$,\s]/g, ''), n = parseFloat(raw);
+  var desc = $('#fDesc').value.trim(), date = $('#fDate').value;
+  if (!isFinite(n) || n === 0) { $('#fAmt').focus(); toast('Type the amount first.', false); return; }
+  if (!desc) { $('#fDesc').focus(); toast('Add a few words for what it was.', false); return; }
+  if (!date) date = today();
+  n = Math.abs(n) * (form.refund ? -1 : 1);
+  var t = { id: form.id || String(Date.now()), cardId: form.cardId, source: form.source, status: form.status, amount: n.toFixed(2), description: desc, date: date };
+  if (form.id) { tx = tx.map(function (x) { return x.id === form.id ? t : x; }); } else { tx.push(t); }
+  saveTx();
+  open[t.cardId] = true; write(K.open, open);
+  prefs.lastCard = t.cardId; prefs.lastSource = t.source; savePrefs();
+  closeSheet(); render();
+}
 
-        function toggleCard(cardId) {
-            expandedCards[cardId] = !expandedCards[cardId];
-            localStorage.setItem('cardTracker_expanded', JSON.stringify(expandedCards));
-            
-            const header = document.querySelector(`#content-${cardId}`).previousElementSibling;
-            const content = document.getElementById(`content-${cardId}`);
-            
-            header.classList.toggle('expanded');
-            content.classList.toggle('expanded');
-        }
+/* ---------- More menu ---------- */
+function openMenu() {
+  var theme = prefs.theme || 'auto';
+  function item(action, ic, t, s) { return '<button class="menu-item" data-action="' + action + '"><span class="menu-ic">' + icon(ic) + '</span><span><span class="menu-t">' + t + '</span><span class="menu-s">' + s + '</span></span></button>'; }
+  var h = item('history', '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/>', 'Paid history', hist.length ? hist.length + (hist.length === 1 ? ' payment' : ' payments') + ' on file' : 'What you have marked paid')
+    + item('cards', '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/>', 'Your cards', 'Add, rename, reorder or remove a card')
+    + item('backup', '<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>', 'Save a backup', prefs.lastBackup ? 'Last saved ' + esc(fmtDate(prefs.lastBackup)) : 'None saved yet')
+    + item('restore', '<path d="M12 15V4"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/>', 'Bring a backup back', 'Replaces what is on this phone')
+    + item('copy', '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>', 'Copy everything as text', 'Same layout as before, for pasting into a note')
+    + '<div class="menu-foot"><span class="label">Light or dark</span><div class="seg">'
+    + ['auto', 'light', 'dark'].map(function (v) { return '<button data-action="theme" data-v="' + v + '" class="' + (theme === v ? 'on' : '') + '">' + (v === 'auto' ? 'Match phone' : v === 'light' ? 'Light' : 'Dark') + '</button>'; }).join('')
+    + '</div></div>';
+  openSheet('More', h);
+}
+function applyTheme() {
+  var q = new URLSearchParams(location.search), theme = q.get('theme') || prefs.theme || 'auto';
+  var dark = theme === 'dark' || (theme === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.mode = dark ? 'dark' : 'light';
+}
 
-        function populateCardSelect() {
-            const select = document.getElementById('formCard');
-            select.innerHTML = '<option value="">Select card...</option>';
-            cards.forEach(card => {
-                select.innerHTML += `<option value="${card.id}">${card.name}</option>`;
-            });
-        }
+/* ---------- Paid history ---------- */
+function markPaid(cardId, source) {
+  var card = cardById(cardId); if (!card) return;
+  var items = tx.filter(function (t) { return t.cardId === cardId && !isPending(t) && srcOf(t, card) === source; });
+  if (!items.length) return;
+  snapshot();
+  var ids = {}; items.forEach(function (t) { ids[t.id] = 1; });
+  tx = tx.filter(function (t) { return !ids[t.id]; });
+  hist.unshift({ id: String(Date.now()), paidOn: today(), cardId: cardId, cardName: card.name, source: source, total: sum(items).toFixed(2), items: items });
+  saveTx(); saveHist(); render();
+  toast(money(sum(items)) + ' marked paid on ' + card.name + '.', true);
+}
+function openHistory() {
+  var h = !hist.length
+    ? '<p class="note">Nothing here yet. When you tap “I paid this” on a card, its posted purchases move here so the card starts clean, and you can still look back at them.</p>'
+    : hist.map(function (b) {
+      return '<details class="batch"><summary><span class="batch-t"><span class="batch-n">' + esc(b.cardName) + (b.source && b.source !== 'Default' ? ' · from ' + esc(b.source) : '') + '</span>'
+        + '<span class="batch-d">Paid ' + esc(fmtDate(b.paidOn)) + ' · ' + b.items.length + (b.items.length === 1 ? ' purchase' : ' purchases') + '</span></span>'
+        + '<span class="batch-amt">' + money(parseFloat(b.total) || 0) + '</span>' + CHEV + '</summary>'
+        + b.items.slice().sort(newest).map(function (t) { return '<div class="batch-item"><span>' + esc(t.description) + ' <small>' + esc(fmtDate(t.date)) + '</small></span><span>' + money(num(t)) + '</span></div>'; }).join('')
+        + '<button class="link-btn" data-action="putback" data-id="' + esc(b.id) + '">Put these back on the card</button></details>';
+    }).join('');
+  openSheet('Paid history', h);
+}
+function putBack(id) {
+  var b = hist.filter(function (x) { return x.id === id; })[0]; if (!b) return;
+  if (!cardById(b.cardId)) { alert('That card is no longer in the app, so these cannot go back onto it.'); return; }
+  snapshot();
+  tx = tx.concat(b.items); hist = hist.filter(function (x) { return x.id !== id; });
+  open[b.cardId] = true; write(K.open, open);
+  saveTx(); saveHist(); closeSheet(); render();
+  toast('Back on ' + b.cardName + '.', true);
+}
 
-        function updateSourceSelect(cardId) {
-            const card = cards.find(c => c.id === cardId);
-            const select = document.getElementById('formSource');
-            select.innerHTML = '<option value="">Select source...</option>';
-            
-            if (card) {
-                card.sources.forEach(source => {
-                    select.innerHTML += `<option value="${source}">${source}</option>`;
-                });
-            }
-        }
+/* ---------- Your cards ---------- */
+function srcText(c) { return hasNamedSources(c) ? c.sources.join(', ') : ''; }
+function parseSrc(s) {
+  var out = []; String(s || '').split(',').forEach(function (p) { p = p.trim(); if (p && out.indexOf(p) < 0) out.push(p); });
+  return out.length ? out : ['Default'];
+}
+function openCards() { draft = cards.map(function (c) { return { id: c.id, name: c.name, sources: c.sources.slice() }; }); paintCards(); }
+function paintCards() {
+  var h = '<p class="note" style="padding-bottom:4px">If a card gets paid from more than one place, list the places with commas between them. Leave it blank if it is just one.</p>'
+    + draft.map(function (c, i) {
+      return '<div class="ce" data-i="' + i + '"><div class="ce-top"><input class="input ce-name" value="' + esc(c.name) + '" placeholder="Card name" aria-label="Card name">'
+        + '<button type="button" class="mini" data-action="card-up" data-i="' + i + '"' + (i === 0 ? ' disabled' : '') + ' aria-label="Move up">↑</button>'
+        + '<button type="button" class="mini" data-action="card-down" data-i="' + i + '"' + (i === draft.length - 1 ? ' disabled' : '') + ' aria-label="Move down">↓</button>'
+        + '<button type="button" class="mini del" data-action="card-remove" data-i="' + i + '" aria-label="Remove card">✕</button></div>'
+        + '<input class="input ce-src" value="' + esc(srcText(c)) + '" placeholder="Paid from (for example: Fidelity, Annual)" aria-label="Paid from"></div>';
+    }).join('')
+    + '<button type="button" class="add-row" style="width:100%;margin:14px 0 8px" data-action="card-add">+ Add a card</button>'
+    + '<button type="button" class="primary" data-action="cards-save">Save cards</button>';
+  openSheet('Your cards', h);
+}
+function readDraft() {
+  Array.prototype.forEach.call(document.querySelectorAll('.ce'), function (el) {
+    var d = draft[+el.dataset.i]; if (!d) return;
+    d.name = el.querySelector('.ce-name').value.trim();
+    d.sources = parseSrc(el.querySelector('.ce-src').value);
+  });
+}
+function saveCards() {
+  readDraft();
+  for (var i = 0; i < draft.length; i++) if (!draft[i].name) { toast('Every card needs a name.', false); return; }
+  draft.forEach(function (d, i) {
+    if (!d.id) { d.id = 'c' + Date.now() + i; return; }
+    var old = cardById(d.id); if (!old) return;
+    tx.forEach(function (t) {
+      if (t.cardId !== d.id) return;
+      var at = old.sources.indexOf(t.source);
+      t.source = (at >= 0 && d.sources[at] != null) ? d.sources[at] : d.sources[0];
+    });
+  });
+  cards = draft.map(function (d) { return { id: d.id, name: d.name, sources: d.sources }; });
+  write(K.cards, cards); saveTx();
+  if (!cardById(prefs.lastCard)) { delete prefs.lastCard; delete prefs.lastSource; savePrefs(); }
+  closeSheet(); render(); toast('Cards saved.', false);
+}
 
-        document.getElementById('formCard').addEventListener('change', (e) => {
-            updateSourceSelect(e.target.value);
-        });
+/* ---------- Backup ---------- */
+function backupText() {
+  var gas = null; try { gas = JSON.parse(localStorage.getItem('cardTracker_gas')); } catch (e) {}
+  return JSON.stringify({ app: 'Card Tracker', version: 2, savedAt: new Date().toISOString(), cards: cards, transactions: tx, history: hist, expanded: open, prefs: prefs, oldGasFund: gas }, null, 2);
+}
+function backupDone() { prefs.lastBackup = today(); savePrefs(); closeSheet(); render(); toast('Backup saved.', false); }
+function saveBackup() {
+  var name = 'card-tracker-backup-' + today() + '.txt', text = backupText(), file = null;
+  try { file = new File([text], name, { type: 'text/plain' }); } catch (e) {}
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: 'Card Tracker backup' }).then(backupDone, function (err) { if (!err || err.name !== 'AbortError') download(text, name); });
+    return;
+  }
+  download(text, name);
+}
+function download(text, name) {
+  var url = URL.createObjectURL(new Blob([text], { type: 'text/plain' })), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  backupDone();
+}
+function restoreFrom(text) {
+  var b; try { b = JSON.parse(text); } catch (e) { alert('That file is not a Card Tracker backup.'); return; }
+  if (!b || !Array.isArray(b.transactions)) { alert('That file is not a Card Tracker backup.'); return; }
+  var when = b.savedAt ? new Date(b.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'an unknown date';
+  if (!confirm('Replace what is on this phone with the backup from ' + when + '? It holds ' + b.transactions.length + ' purchases.')) return;
+  if (Array.isArray(b.cards) && b.cards.length) write(K.cards, b.cards);
+  write(K.tx, b.transactions);
+  write(K.hist, Array.isArray(b.history) ? b.history : []);
+  if (b.expanded) write(K.open, b.expanded);
+  if (b.prefs) write(K.prefs, b.prefs);
+  if (b.oldGasFund && localStorage.getItem('cardTracker_gas') == null) localStorage.setItem('cardTracker_gas', JSON.stringify(b.oldGasFund));
+  load(); applyTheme(); closeSheet(); render(); toast('Backup brought back.', false);
+}
 
-        function openModal(cardId = '', source = '', status = 'pending') {
-            const modal = document.getElementById('modalOverlay');
-            document.getElementById('modalTitle').textContent = 'Add Transaction';
-            document.getElementById('editingId').value = '';
-            
-            // Set form values
-            document.getElementById('formCard').value = cardId;
-            updateSourceSelect(cardId);
-            document.getElementById('formSource').value = source;
-            document.getElementById('formStatus').value = status;
-            document.getElementById('formAmount').value = '';
-            document.getElementById('formDesc').value = '';
-            document.getElementById('formDate').value = new Date().toISOString().split('T')[0];
-            
-            modal.classList.add('active');
-            
-            // Focus amount field after animation
-            setTimeout(() => {
-                document.getElementById('formAmount').focus();
-            }, 300);
-        }
+/* The same text layout the old "Export to Clipboard" button made. */
+function copyAsText() {
+  var out = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' - Card Payments\n\n';
+  cards.forEach(function (card) {
+    var mine = tx.filter(function (t) { return t.cardId === card.id; });
+    if (!mine.length) return;
+    out += card.name + ':\n';
+    card.sources.forEach(function (source) {
+      var items = mine.filter(function (t) { return srcOf(t, card) === source; });
+      if (!items.length) return;
+      if (hasNamedSources(card)) out += 'From ' + source + ':\n';
+      out += 'Pending:\n';
+      items.filter(isPending).forEach(function (t) { out += '  ' + t.description + ': $' + num(t).toFixed(2) + '\n'; });
+      out += '\nPosted:\n';
+      items.filter(function (t) { return !isPending(t); }).forEach(function (t) { out += '  ' + t.description + ': $' + num(t).toFixed(2) + '\n'; });
+      out += '\n';
+    });
+  });
+  function ok() { closeSheet(); toast('Copied.', false); }
+  function bad() { alert('Could not copy on this phone.'); }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(out).then(ok, bad); else bad();
+}
 
-        function openQuickAdd() {
-            openModal();
-        }
+/* ---------- Taps ---------- */
+document.addEventListener('click', function (e) {
+  var el = e.target.closest('[data-action]'); if (!el) return;
+  var a = el.dataset.action, d = el.dataset;
+  if (a === 'scrim') { if (e.target === el) closeSheet(); return; }
+  switch (a) {
+    case 'toggle': open[d.card] = !open[d.card]; write(K.open, open); render(); break;
+    case 'add': openPurchase({ cardId: d.card, source: d.source }); break;
+    case 'edit': openPurchase({ id: d.id }); break;
+    case 'post':
+      snapshot();
+      tx.forEach(function (t) { if (t.id === d.id) t.status = 'posted'; });
+      saveTx(); render(); toast('Moved to posted.', true); break;
+    case 'paid': markPaid(d.card, d.source); break;
+    case 'undo': undo(); break;
+    case 'close': closeSheet(); break;
+    case 'menu': openMenu(); break;
+    case 'history': openHistory(); break;
+    case 'putback': putBack(d.id); break;
+    case 'cards': openCards(); break;
+    case 'backup': saveBackup(); break;
+    case 'restore': $('#restoreFile').value = ''; $('#restoreFile').click(); break;
+    case 'copy': copyAsText(); break;
+    case 'theme': prefs.theme = d.v; savePrefs(); applyTheme(); openMenu(); break;
+    case 'pick-card':
+      form.cardId = d.v; var c = cardById(d.v);
+      if (c.sources.indexOf(form.source) < 0) form.source = c.sources[0];
+      paintForm(); break;
+    case 'pick-source': form.source = d.v; paintForm(); break;
+    case 'pick-status': form.status = d.v; paintForm(); break;
+    case 'refund': form.refund = !form.refund; paintForm(); break;
+    case 'sugg': $('#fDesc').value = d.v; paintSugg(); break;
+    case 'delete-tx':
+      var id = form && form.id; if (!id) break;
+      snapshot(); tx = tx.filter(function (t) { return t.id !== id; });
+      saveTx(); closeSheet(); render(); toast('Deleted.', true); break;
+    case 'card-up': case 'card-down':
+      readDraft(); var i = +d.i, j = a === 'card-up' ? i - 1 : i + 1;
+      if (j < 0 || j >= draft.length) break;
+      var tmp = draft[i]; draft[i] = draft[j]; draft[j] = tmp; paintCards(); break;
+    case 'card-add': readDraft(); draft.push({ id: '', name: '', sources: ['Default'] }); paintCards();
+      var names = document.querySelectorAll('.ce-name'); names[names.length - 1].focus(); break;
+    case 'card-remove':
+      readDraft(); var k = +d.i, dc = draft[k];
+      var n = dc.id ? tx.filter(function (t) { return t.cardId === dc.id; }).length : 0;
+      if (n) { alert((dc.name || 'This card') + ' still has ' + n + (n === 1 ? ' purchase' : ' purchases') + ' on it. Clear those first, then remove the card.'); break; }
+      if (draft.length === 1) { alert('Keep at least one card.'); break; }
+      draft.splice(k, 1); paintCards(); break;
+    case 'cards-save': saveCards(); break;
+  }
+});
+document.addEventListener('submit', function (e) { if (e.target.id === 'pf') { e.preventDefault(); savePurchase(); } });
+document.addEventListener('input', function (e) { if (e.target.id === 'fDesc') paintSugg(); });
+$('#restoreFile').addEventListener('change', function () {
+  var f = this.files && this.files[0]; if (!f) return;
+  var r = new FileReader(); r.onload = function () { restoreFrom(String(r.result)); }; r.readAsText(f);
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
 
-        function closeModal(event) {
-            if (event && event.target !== event.currentTarget) return;
-            document.getElementById('modalOverlay').classList.remove('active');
-        }
+/* Keep the pop-up panel above the phone's keyboard. */
+if (window.visualViewport) {
+  var vv = window.visualViewport, fit = function () { document.documentElement.style.setProperty('--kb', Math.max(0, window.innerHeight - vv.height - vv.offsetTop) + 'px'); };
+  vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
+}
+if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', applyTheme); }
+window.addEventListener('storage', function () { if (!$('#scrim').classList.contains('on')) { load(); applyTheme(); render(); } });
 
-        function saveTransaction(event) {
-            event.preventDefault();
-            
-            const editingId = document.getElementById('editingId').value;
-            const transaction = {
-                id: editingId || Date.now().toString(),
-                cardId: document.getElementById('formCard').value,
-                source: document.getElementById('formSource').value,
-                status: document.getElementById('formStatus').value,
-                amount: document.getElementById('formAmount').value,
-                description: document.getElementById('formDesc').value,
-                date: document.getElementById('formDate').value
-            };
-
-            if (editingId) {
-                const index = transactions.findIndex(t => t.id === editingId);
-                if (index !== -1) {
-                    transactions[index] = transaction;
-                }
-            } else {
-                transactions.push(transaction);
-            }
-
-            localStorage.setItem('cardTracker_transactions', JSON.stringify(transactions));
-            
-            // Expand the card we just added to
-            expandedCards[transaction.cardId] = true;
-            localStorage.setItem('cardTracker_expanded', JSON.stringify(expandedCards));
-            
-            closeModal();
-            renderCards();
-        }
-
-        function editTransaction(id) {
-            const t = transactions.find(t => t.id === id);
-            if (!t) return;
-
-            document.getElementById('modalTitle').textContent = 'Edit Transaction';
-            document.getElementById('editingId').value = t.id;
-            document.getElementById('formCard').value = t.cardId;
-            updateSourceSelect(t.cardId);
-            document.getElementById('formSource').value = t.source;
-            document.getElementById('formStatus').value = t.status;
-            document.getElementById('formAmount').value = t.amount;
-            document.getElementById('formDesc').value = t.description;
-            document.getElementById('formDate').value = t.date;
-
-            document.getElementById('modalOverlay').classList.add('active');
-        }
-
-        function deleteTransaction(id) {
-            if (confirm('Delete this transaction?')) {
-                transactions = transactions.filter(t => t.id !== id);
-                localStorage.setItem('cardTracker_transactions', JSON.stringify(transactions));
-                renderCards();
-            }
-        }
-
-        function postTransaction(id) {
-            const index = transactions.findIndex(t => t.id === id);
-            if (index !== -1) {
-                transactions[index].status = 'posted';
-                localStorage.setItem('cardTracker_transactions', JSON.stringify(transactions));
-                renderCards();
-            }
-        }
-
-        // Gas Fund Functions
-        function renderGasFund() {
-            const balance = gasTransactions.reduce((sum, t) => {
-                return sum + (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
-            }, 0);
-            
-            document.getElementById('gasBalance').textContent = `$${balance.toFixed(2)}`;
-            document.getElementById('gasBalance').style.color = balance < 20 ? 'var(--danger)' : 'var(--pending)';
-            
-            const content = document.getElementById('gasFundContent');
-            const chevron = document.getElementById('gasChevron');
-            if (gasExpanded) {
-                content.classList.add('expanded');
-                chevron.style.transform = 'rotate(180deg)';
-            } else {
-                content.classList.remove('expanded');
-                chevron.style.transform = 'rotate(0deg)';
-            }
-            
-            const container = document.getElementById('gasTransactions');
-            if (gasTransactions.length === 0) {
-                container.innerHTML = '<div class="empty-state">No transactions yet</div>';
-                return;
-            }
-            
-            // Sort by date, most recent first
-            const sorted = [...gasTransactions].sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            container.innerHTML = sorted.map(t => {
-                const date = new Date(t.date + 'T00:00:00');
-                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const sign = t.type === 'deposit' ? '+' : '-';
-                
-                return `
-                    <div class="gas-transaction">
-                        <div class="transaction-info">
-                            <div class="transaction-desc">${t.note || (t.type === 'deposit' ? 'Added funds' : 'Gas purchase')}</div>
-                            <div class="transaction-date">${dateStr}</div>
-                        </div>
-                        <span class="gas-transaction-amount ${t.type}">${sign}$${parseFloat(t.amount).toFixed(2)}</span>
-                        <div class="transaction-actions">
-                            <button class="action-btn delete" onclick="deleteGasTransaction('${t.id}')" title="Delete">✕</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function toggleGasFund() {
-            gasExpanded = !gasExpanded;
-            localStorage.setItem('cardTracker_gasExpanded', JSON.stringify(gasExpanded));
-            renderGasFund();
-        }
-
-        function openGasModal(type) {
-            const modal = document.getElementById('gasModalOverlay');
-            document.getElementById('gasModalTitle').textContent = type === 'deposit' ? 'Add Funds' : 'Gas Purchase';
-            document.getElementById('gasSubmitBtn').textContent = type === 'deposit' ? 'Add Funds' : 'Record Purchase';
-            document.getElementById('gasFormType').value = type;
-            document.getElementById('gasFormAmount').value = '';
-            document.getElementById('gasFormNote').value = '';
-            document.getElementById('gasFormNote').placeholder = type === 'deposit' ? 'e.g., Transfer from checking...' : 'e.g., Shell, Costco...';
-            document.getElementById('gasFormDate').value = new Date().toISOString().split('T')[0];
-            
-            modal.classList.add('active');
-            
-            setTimeout(() => {
-                document.getElementById('gasFormAmount').focus();
-            }, 300);
-        }
-
-        function closeGasModal(event) {
-            if (event && event.target !== event.currentTarget) return;
-            document.getElementById('gasModalOverlay').classList.remove('active');
-        }
-
-        function saveGasTransaction(event) {
-            event.preventDefault();
-            
-            const transaction = {
-                id: Date.now().toString(),
-                type: document.getElementById('gasFormType').value,
-                amount: document.getElementById('gasFormAmount').value,
-                note: document.getElementById('gasFormNote').value,
-                date: document.getElementById('gasFormDate').value
-            };
-            
-            gasTransactions.push(transaction);
-            localStorage.setItem('cardTracker_gas', JSON.stringify(gasTransactions));
-            
-            gasExpanded = true;
-            localStorage.setItem('cardTracker_gasExpanded', JSON.stringify(gasExpanded));
-            
-            closeGasModal();
-            renderGasFund();
-        }
-
-        function deleteGasTransaction(id) {
-            if (confirm('Delete this transaction?')) {
-                gasTransactions = gasTransactions.filter(t => t.id !== id);
-                localStorage.setItem('cardTracker_gas', JSON.stringify(gasTransactions));
-                renderGasFund();
-            }
-        }
-
-        function exportData() {
-            let output = `${document.getElementById('currentDate').textContent} - Card Payments\n\n`;
-            
-            cards.forEach(card => {
-                const cardTransactions = transactions.filter(t => t.cardId === card.id);
-                if (cardTransactions.length === 0) return;
-                
-                output += `${card.name}:\n`;
-                
-                card.sources.forEach(source => {
-                    const sourceTransactions = cardTransactions.filter(t => t.source === source);
-                    if (sourceTransactions.length === 0) return;
-                    
-                    if (card.sources.length > 1 || source !== 'Default') {
-                        output += `From ${source}:\n`;
-                    }
-                    
-                    const pending = sourceTransactions.filter(t => t.status === 'pending');
-                    const posted = sourceTransactions.filter(t => t.status === 'posted');
-                    
-                    output += 'Pending:\n';
-                    pending.forEach(t => {
-                        output += `  ${t.description}: $${parseFloat(t.amount).toFixed(2)}\n`;
-                    });
-                    
-                    output += '\nPosted:\n';
-                    posted.forEach(t => {
-                        output += `  ${t.description}: $${parseFloat(t.amount).toFixed(2)}\n`;
-                    });
-                    
-                    output += '\n';
-                });
-            });
-
-            navigator.clipboard.writeText(output).then(() => {
-                alert('Copied to clipboard!');
-            }).catch(() => {
-                alert('Could not copy. Try selecting and copying manually.');
-            });
-        }
-    </script>
+load(); applyTheme(); render();
+})();
+</script>
 </body>
 </html>
